@@ -18,28 +18,29 @@
 
 
 
-typedef struct {
-	char serverNodeName[250];
-	pid_t servPid;
-	int chidClient;
-	int chidSlaveTask;
-	int chidSlaveResult;
-	int chidViewer;
-	pthread_t *tid;
-} ServerInternalStaticData;
+
 
 
 typedef struct TaskResultServerStruct TaskResultServerStruct;
 
 struct TaskResultServerStruct{
 	TaskResultCommonStruct taskResultCommonStruct;
+	int receiveClientID;
+	unsigned long lastCompletedDot;
 	TaskResultServerStruct* nextResultServerStruct;
 	TaskResultServerStruct* previousResultServerStruct;
 };
 
+typedef struct{
+	TaskCommonStruct taskCommonStruct;
+	int receiveClientID;
+}TaskServerStruct;
+
+
+
 
 typedef struct {
-	std::map  <int, TaskCommonStruct> serverTaskQueueStruct;
+	std::map  <int, TaskServerStruct> serverTaskQueueStruct;
 	TaskResultServerStruct *taskResultServerStructFirst;
 	TaskResultServerStruct *taskResultServerStructLastExistingEmpty;
 
@@ -49,10 +50,20 @@ typedef struct {
 	bool quantEndedGivingTasksToSlaves;
 	bool quantEndedGettingResultsFromSlaves;
 	bool quantEndedViewer;
+
+	unsigned long uniqueTaskID;
 } ServerInternalDynamicData;
 
 
-
+typedef struct {
+	char serverNodeName[250];
+	pid_t servPid;
+	int chidClient;
+	int chidSlaveTask;
+	int chidSlaveResult;
+	int chidViewer;
+	pthread_t *tid;
+} ServerInternalStaticData;
 
 typedef struct{
 	char severInfoFileName[250];

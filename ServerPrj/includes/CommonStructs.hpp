@@ -12,24 +12,57 @@ typedef struct{
 	double startX;
 	double startY;
 	long long exceedsInNanosecds;
-	long numberOfNeededPoints;
-	int taskID;
+
+
+	union{
+		struct{
+			unsigned long offsetOfWantedDots;
+			unsigned long numberOfWantedDots;
+		};
+		struct{
+			unsigned long totalNumberOfDots;
+			unsigned long portionSize;
+		};
+	};
+
+	unsigned int taskID;
 } TaskCommonStruct;
+
+typedef enum{
+	OK,
+	TASK_IS_PARTICALLY_DONE,
+	TASK_IS_DONE,
+
+	QUEU_IS_FULL,
+	NO_SUCH_TASK,
+
+
+	PREVIOUS_SUBTASK_HAVE_NOT_BEEN_DONE_YET,
+
+
+
+
+	TASK_ECEEDED,
+} ServerToClientAnswers;
 
 typedef struct{
 	int taskID;
-	int numberOfDotsCoordinates;
+
+	unsigned long offsetOfResults;
+	unsigned long numberOfDotsEvaluatedInCurrentPortion;
+
 
 	long long exceedsInNanosecds;
 
 	bool taskExceeded;
-	bool serverBusy;
+	ServerToClientAnswers serverToClientAnswers;
 } TaskResultCommonStructHeader;
 
 
 typedef  struct{
 	double xResult;
 	double yResult;
+	bool resultExceeded;
 } TaskResultPairOfDots;
 
 typedef struct{

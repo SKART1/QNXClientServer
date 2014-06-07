@@ -5,7 +5,7 @@
 #include <sys/neutrino.h>
 #include <sys/netmgr.h>
 
-#include <stdio.h>  //For cout cerr and so on
+#include <stdio.h>  //For cerr cerr and so on
 #include <errno.h>	//For errno
 #include <string.h>  //For strerror
 
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 	fscanf(fp,"%s", &dummy);
 	fscanf(fp,"%d", &servCHID);
 
-	std::cout<<servPID<<servCHID<<std::endl;
+	//std::cerr<<servPID<<servCHID<<std::endl;
 
 
 	int coid=-1;
@@ -38,6 +38,9 @@ int main(int argc, char *argv[]) {
 		return NULL;
 	}
 	
+	int totalNumberOfDots=100;
+
+
 	TaskCommonStruct taskStruct;
 	taskStruct.H=1;
 	taskStruct.a=200;
@@ -46,42 +49,75 @@ int main(int argc, char *argv[]) {
 	taskStruct.kvadrantY=-1;
 	taskStruct.startX=0;
 	taskStruct.startY=taskStruct.b;
-	taskStruct.numberOfNeededPoints=5;
+	taskStruct.totalNumberOfDots=totalNumberOfDots;
+	taskStruct.portionSize=10;
+	taskStruct.exceedsInNanosecds=100000000000LL;
+
+
+
+	taskStruct.taskID=0;
 	//taskStruct.rcvid=-1;
 
 
 	double buff[100];
 
 	TaskResultCommonStruct taskResultStruct;
-	taskResultStruct.taskResultPairOfDots=new TaskResultPairOfDots[taskStruct.numberOfNeededPoints];
+	taskResultStruct.taskResultPairOfDots=new TaskResultPairOfDots[taskStruct.totalNumberOfDots];
 	iov_t iovSend;
 	iov_t iovReceive[2];
 
 	SETIOV(&iovSend, &(taskStruct), sizeof(TaskCommonStruct));
 
 	SETIOV(iovReceive+0, &(taskResultStruct.taskResultCommonStructHeader), sizeof(TaskResultCommonStructHeader));
-	SETIOV(iovReceive+1, taskResultStruct.taskResultPairOfDots, taskStruct.numberOfNeededPoints*sizeof(TaskResultPairOfDots));
+	SETIOV(iovReceive+1, &taskResultStruct.taskResultPairOfDots[0], taskStruct.portionSize*sizeof(TaskResultPairOfDots));
 
 	MsgSendv(coid,&iovSend, 1, iovReceive, 2);
 
-
-
-	const char separator    = ' ';
-	const int numWidth      = 10;
-	//std::cout<<taskResultStruct.xVector.size()<<std::endl;
-	for(int i=0; i<taskStruct.numberOfNeededPoints; i++){
-		//std::cout << std::left<<std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) << taskResultStruct.xVector.back();
-		//std::cout << std::left<< std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) << taskResultStruct.yVector.back();
-		//std::cout << std::endl;
-		std::cout<<"X: "<<taskResultStruct.taskResultPairOfDots[i].xResult<<std::endl;
-		std::cout<<"Y: "<<taskResultStruct.taskResultPairOfDots[i].yResult<<std::endl;
+	for(unsigned int i=0; i<taskStruct.portionSize; i++){
+		//std::cerr << std::left<<std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) << taskResultStruct.xVector.back();
+		//std::cerr << std::left<< std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) << taskResultStruct.yVector.back();
+		//std::cerr << std::endl;
+		std::cerr<<"Dot "<<i<< " X: "<<taskResultStruct.taskResultPairOfDots[i].xResult<<" Y: "<<taskResultStruct.taskResultPairOfDots[i].yResult<<std::endl;
 		//taskResultStruct.xVector.pop_back();
 		//taskResultStruct.yVector.pop_back();
 	}
 
+
+	unsigned int pairsDone=taskStruct.portionSize;
+	taskStruct.taskID=taskResultStruct.taskResultCommonStructHeader.taskID;
+	while(pairsDone<totalNumberOfDots){
+		taskStruct.offsetOfWantedDots=pairsDone;
+		taskStruct.numberOfWantedDots=taskStruct.portionSize;
+
+		SETIOV(&iovSend, &(taskStruct), sizeof(TaskCommonStruct));
+
+		SETIOV(iovReceive+0, &(taskResultStruct.taskResultCommonStructHeader), sizeof(TaskResultCommonStructHeader));
+		SETIOV(iovReceive+1, &taskResultStruct.taskResultPairOfDots[pairsDone], taskStruct.portionSize*sizeof(TaskResultPairOfDots));
+
+		MsgSendv(coid,&iovSend, 1, iovReceive, 2);
+
+		for(unsigned int i=taskResultStruct.taskResultCommonStructHeader.offsetOfResults; i<(taskResultStruct.taskResultCommonStructHeader.offsetOfResults+taskResultStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion); i++){
+			//std::cerr << std::left<<std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) << taskResultStruct.xVector.back();
+			//std::cerr << std::left<< std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) << taskResultStruct.yVector.back();
+			//std::cerr << std::endl;
+			std::cerr<<"Dot "<<i<<" X: "<<taskResultStruct.taskResultPairOfDots[i].xResult<<" Y: "<<taskResultStruct.taskResultPairOfDots[i].yResult<<std::endl;
+			//taskResultStruct.xVector.pop_back();
+			//taskResultStruct.yVector.pop_back();
+		}
+
+
+		pairsDone=pairsDone+taskResultStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion;
+
+		const char separator    = ' ';
+		const int numWidth      = 10;
+		//std::cerr<<taskResultStruct.xVector.size()<<std::endl;
+
+
+
+	}
 	delete[] taskResultStruct.taskResultPairOfDots;
 
-
+	std::cerr<<"Finished"<<std::endl;
 
 	return EXIT_SUCCESS;
 }

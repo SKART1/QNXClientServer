@@ -41,45 +41,53 @@ void * Slave(void *argSlaveParam) {
 
 	while (true) {
 		MsgSend(chidTasks,NULL,NULL, &taskStruct, sizeof(TaskCommonStruct));
+		std::cerr<<"[SLAVE]: Task received"<<std::endl;
 		interpolatorImpl.setAllNewParametrs(taskStruct.H, taskStruct.a, taskStruct.b,taskStruct.kvadrantX,taskStruct.kvadrantY,taskStruct.startX, taskStruct.startY);
 
-		taskResultCommonStruct.taskResultCommonStructHeader.serverBusy=false;
+
 		taskResultCommonStruct.taskResultCommonStructHeader.taskID=taskStruct.taskID;
-		taskResultCommonStruct.taskResultPairOfDots=new TaskResultPairOfDots[taskStruct.numberOfNeededPoints];
+		taskResultCommonStruct.taskResultPairOfDots=new TaskResultPairOfDots[taskStruct.totalNumberOfDots];
+
+		taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults=0;
+		//taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsCoordinatesEvaluatedInCurrentTask=taskStruct.currentWantedPortionOfDots;
 
 
-		taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsCoordinates=0;
-		for(int i=0; i<taskStruct.numberOfNeededPoints; i++){
-			interpolatorImpl.getNextPoint(&taskResultCommonStruct.taskResultPairOfDots[i].xResult, &taskResultCommonStruct.taskResultPairOfDots[i].yResult);
-			taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsCoordinates++;
+
+		while((taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion)<taskStruct.totalNumberOfDots){
+
+
+
+
+
+
+			for(unsigned long i=taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults;i<(taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskStruct.portionSize) &&	i<taskStruct.totalNumberOfDots;	i++){
+				interpolatorImpl.getNextPoint(&taskResultCommonStruct.taskResultPairOfDots[i].xResult, &taskResultCommonStruct.taskResultPairOfDots[i].yResult);
+				taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion++;
+			}
+
+			int msgSize=sizeof(taskResultCommonStruct);
+
+
+			msgSize=msgSize+sizeof(TaskResultPairOfDots)*taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion;
+
+
+
+
+			iov_t iov[2];
+
+			SETIOV(iov+0, &taskResultCommonStruct.taskResultCommonStructHeader, sizeof(TaskResultCommonStructHeader));
+			SETIOV(iov+1, &taskResultCommonStruct.taskResultPairOfDots[taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults], sizeof(TaskResultPairOfDots)*taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion);
+			std::cerr<<"[SLAVE]: Portion send"<<std::endl;
+			MsgSendv(chidResults,iov,2, NULL,NULL);
+			taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults=taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion;
+			taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion=0;
 		}
-
-		int msgSize=sizeof(taskResultCommonStruct);
-		if(taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsCoordinates>2){
-			msgSize=msgSize+sizeof(TaskResultPairOfDots)*taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsCoordinates;
-
-		}
-
-
-		iov_t iov[2];
-
-		//int tempSize=sizeof(TaskResultCommonStructHeader);
-		//int tempSize2= sizeof(TaskResultPairOfDots)*taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsCoordinates;
-		SETIOV(iov+0, &taskResultCommonStruct.taskResultCommonStructHeader, sizeof(TaskResultCommonStructHeader));
-		SETIOV(iov+1, taskResultCommonStruct.taskResultPairOfDots, sizeof(TaskResultPairOfDots)*taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsCoordinates);
-
-		MsgSendv(chidResults,iov,2, NULL,NULL);
 
 		delete [] taskResultCommonStruct.taskResultPairOfDots;
-
-
-
 	}
-
 
 	if (ConnectDetach(chidTasks) == -1) {
 		perror("[ERROR]: can not detach channel because of:");
-
 		return NULL;
 	}
 	return NULL;
