@@ -55,11 +55,6 @@ void * Slave(void *argSlaveParam) {
 
 		while((taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion)<taskStruct.totalNumberOfDots){
 
-
-
-
-
-
 			for(unsigned long i=taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults;i<(taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskStruct.portionSize) &&	i<taskStruct.totalNumberOfDots;	i++){
 				interpolatorImpl.getNextPoint(&taskResultCommonStruct.taskResultPairOfDots[i].xResult, &taskResultCommonStruct.taskResultPairOfDots[i].yResult);
 				taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion++;

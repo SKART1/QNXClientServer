@@ -7,7 +7,7 @@ extern "C" {
 #include "abdefine.h"
 
 extern ApWindowLink_t base;
-extern ApWidget_t AbWidgets[ 5 ];
+extern ApWidget_t AbWidgets[ 6 ];
 
 
 #if defined(__cplusplus)

@@ -15,6 +15,8 @@ extern const int ABN_WorkNumberInput;
 #define ABW_WorkNumberInput                  AbGetABW( ABN_WorkNumberInput )
 extern const int ABN_PtMyLine;
 #define ABW_PtMyLine                         AbGetABW( ABN_PtMyLine )
+extern const int ABN_PtLabelStatus;
+#define ABW_PtLabelStatus                    AbGetABW( ABN_PtLabelStatus )
 
 #define AbGetABW( n ) ( AbWidgets[ n ].wgt )
 

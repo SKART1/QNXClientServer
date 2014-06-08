@@ -12,6 +12,7 @@
 /*My standard headers*/
 #include <sys/netmgr.h>
 #include <string>
+#include <iostream>
 #include <sys/neutrino.h>
 #include <sys/netmgr.h>
 
@@ -23,8 +24,42 @@
 /*My local headers*/
 #include "../../ServerPrj/includes/CommonStructs.hpp"
 
+#define BUFF_SIZE 1000
+#define PORTION 10;
+
 int regime=0;
-PtWidget_t * lines;
+PtWidget_t ** lines;
+
+
+
+/*-----------------------------------------------------------------------*/
+int ParseServerInfoFile(std::string pathToInfoFile, char * serverNodeName,  pid_t *servPID, int *servCHID){
+	FILE *filePointer = NULL;
+
+	int result=0;
+
+
+	if((filePointer=fopen(pathToInfoFile.c_str(),"r"))==NULL){
+		std::cerr<<"[ERROR]: Can not server info file to "<<pathToInfoFile.c_str()<<std::endl;
+		return -1;
+	}
+	else{
+		result=result+fscanf(filePointer, "SERVER_NODE_NAME: %s\n", serverNodeName);
+		result=result+fscanf(filePointer, "SERVER_PID: %d\n", servPID);
+		fscanf(filePointer, "CHID_FOR_CLIENT: %d\t\n", servCHID);
+		fscanf(filePointer, "CHID_TASKS_FOR_SLAVES: %d\t\n", servCHID);
+		fscanf(filePointer, "CHID_RESULTS_FOR_SLAVES: %d\t\n", servCHID);
+		result=result+fscanf(filePointer, "CHID_FOR_VIEWERS: %d\n", servCHID);
+		fclose(filePointer);
+		if(result!=3){
+			std::cerr<<"[ERROR]: Wrong server info format"<<std::endl;
+			return -1;
+		}
+
+	}
+	return 0;
+}
+/*-----------------------------------------------------------------------*/
 
 
 int
@@ -37,128 +72,172 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 	PtArg_t  args[5];
 
 	//PtLine
-
 	PhPoint_t phPointOriginMy;
-	phPointOriginMy.x=125;
+	phPointOriginMy.x=150;
 	phPointOriginMy.y=0;
+	PtSetArg(&args[0],Pt_ARG_ORIGIN, &phPointOriginMy,1);
+	PtSetResources(ABW_PtMyLine, 1, args);
 
 	PhPoint_t phPointMy[2];
-
 	phPointMy[0].x=0;
 	phPointMy[0].y=0;
 
 	phPointMy[1].x=1000;
 	phPointMy[1].y=1000;
+	/*
+	PtSetArg(&args[0],Pt_ARG_ORIGIN, &phPointOriginMy,1);
+	PtSetResources(ABW_PtMyLine, 1, args);
 
 
-	char serverNodeName[250];
-	int serverNodeNumber;
-
-	int serverPID;
-
-	int serverCHID;
-
-	int coid;
-
+	PtSetArg(&args[0],Pt_ARG_POINTS, phPointMy,2);
+	PtSetResources(ABW_PtMyLine, 1, args);
+*/
 
 
 
-	char taskName[250];
-	int taskNumber;
 
 	/*http://127.0.0.1:50484/help/index.jsp?topic=%2Fcom.qnx.doc.photon_prog_guide%2Fres_code.html*/
 
 	if(regime==0){
-		bool success;
+		char pathToServerInfoFile[250];
+		char serverNodeName[250];
+		int serverNodeNumber;
+		int serverPID;
+		int serverCHID;
+		int coid;
+		int taskNumber;
+		unsigned long currentDot;
 
+		iov_t iovSend;
+		iov_t iovReceive[3];
+
+		/*Get path to server info file*/
 		PtSetArg( args, Pt_ARG_TEXT_STRING, 0, 0 );
 		PtGetResources( ABW_NodeNameInput, 1, args );
-		strcpy(serverNodeName, (char*) (args[0].value));
-		serverNodeNumber=netmgr_strtond(serverNodeName, NULL);
+		strcpy(pathToServerInfoFile, (char*) (args[0].value));
 
-		printf("[INFO]: Node name: %s and serverNodeNumber: %i\n",serverNodeName,serverNodeNumber);
-
-
-
+		/*Get task number*/
 		PtSetArg( args, Pt_ARG_TEXT_STRING, 0, 0 );
-		PtGetResources( ABW_NodeNameInput, 1, args );
-		strcpy(taskName, (char*) (args[0].value));
+		PtGetResources( ABW_WorkNumberInput, 1, args );
 		taskNumber=atoi((char*) (args[0].value));
 
-		printf("[INFO]: Test: %s\n and number: %i",taskName, taskNumber);
+		ParseServerInfoFile(pathToServerInfoFile, serverNodeName, &serverPID, &serverCHID);
+		serverNodeNumber=netmgr_strtond(serverNodeName, NULL);
+		printf("[INFO]: Path to file: %s and serverNodeNumber: %i PID: %d CHID: %d \n ",pathToServerInfoFile,serverNodeNumber, serverPID, serverCHID);
+		printf("[INFO]: Task number: %i", taskNumber);
 
-/*
-		PtSetArg(&args[0],Pt_ARG_ORIGIN, &phPointOriginMy,1);
-		PtSetResources(ABW_PtMyLine, 1, args);
-
-
-		PtSetArg(&args[0],Pt_ARG_POINTS, phPointMy,2);
-		PtSetResources(ABW_PtMyLine, 1, args);
-*/
 		if(serverNodeNumber==-1 || taskNumber<0){
 			printf("[ERROR]: serverNodeNumber or  taskNumber incorrect");
-			//goto deinit;
-		}
-		std::string pathToServInfo=std::string(serverNodeName)+std::string("/tmp/serv.serv");
-
-		FILE *fp;
-		if((fp=fopen(pathToServInfo.c_str(),"r"))==NULL){
-			printf("[ERROR]: fopen serv on path: %s\n",pathToServInfo);
 			goto deinit;
 		};
-		fscanf(fp,"SERVER_NODE_NAME: %i\n",&serverPID);
-		if(fscanf(fp,"SERVER_PID: %i\n",&serverPID)!=0){
-			printf("[ERROR]: Failed reading server PID\n");
-			goto deinit;
-		}
-		printf("[INFO]: Server PID: %i\n",serverPID);
 
-		if(fscanf(fp,"CHID_FOR_CLIENT: %i\n",&serverCHID)!=0){
-			printf("[ERROR]: Failed reading server PID\n");
-			goto deinit;
-		};
-		printf("[INFO]: Server CHID for client: %i\n",serverCHID);
 
 		if((coid=ConnectAttach(serverNodeNumber, serverPID, serverCHID,NULL,NULL))==-1){
+			perror("[ERROR]: Connect attach");
 			goto deinit;
 		};
 
-		//MsgSendv(coid,);
-		TaskResultCommonStruct taskResultStruct;
-		taskResultStruct.taskResultPairOfDots=new TaskResultPairOfDots[10000];
+
+		ViewerResultCommonStruct viewerResultCommonStruct;
+		viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots=new TaskResultPairOfDots[BUFF_SIZE];
+
+		ViewerTaskInterest viewerTaskInterest;
+		viewerTaskInterest.taskID=taskNumber;
+		viewerTaskInterest.offsetOfWantedDots=0;
+		viewerTaskInterest.numberOfWantedDots=BUFF_SIZE;
+
+		lines=new PtWidget_t*[BUFF_SIZE];
 
 
-		int number=1;
-		iov_t iovSend;
-		iov_t iovReceive[2];
+		currentDot=0;
+		viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.totalNumberOfDots=1;
+		while(viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.totalNumberOfDots>currentDot && viewerResultCommonStruct.answer!=VIEWER_NO_SUCH_TASK){
+			viewerTaskInterest.offsetOfWantedDots=currentDot;
+			viewerTaskInterest.numberOfWantedDots=BUFF_SIZE;
 
-		SETIOV(&iovSend, &(number), sizeof(int));
+			SETIOV(&iovSend, &(viewerTaskInterest), sizeof(ViewerTaskInterest));
 
-		SETIOV(iovReceive+0, &(taskResultStruct.taskResultCommonStructHeader), sizeof(TaskResultCommonStructHeader));
-		SETIOV(iovReceive+1, taskResultStruct.taskResultPairOfDots, 10000*sizeof(TaskResultPairOfDots));
+			SETIOV(iovReceive+0, &(viewerResultCommonStruct.answer), sizeof(ServerToViewerAnswer));
+			SETIOV(iovReceive+1, &(viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader), sizeof(TaskResultCommonStructHeader));
+			SETIOV(iovReceive+2, &viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[currentDot], (BUFF_SIZE-currentDot)*sizeof(TaskResultPairOfDots));
 
-		MsgSendv(coid,&iovSend, 1, iovReceive, 2);
+			MsgSendv(coid,&iovSend, 1, iovReceive, 3);
+			switch(viewerResultCommonStruct.answer){
+				case VIEWER_NO_SUCH_TASK:
+					PtSetArg(&args[0], Pt_ARG_TEXT_STRING,"VIEWER_NO_SUCH_TASK", 0);
+					PtSetResources(ABW_PtLabelStatus, 1, args);
+					goto deinit;
+					break;
+				case VIEWER_TASK_IS_NOT_DONE:
+					PtSetArg(&args[0], Pt_ARG_TEXT_STRING,"TASK_IN_QUEU", 0);
+					PtSetResources(ABW_PtLabelStatus, 1, args);
+					usleep(100);
+					break;
+				case VIEWER_OK:
+				case VIEWER_TASK_IS_PARTICALLY_DONE:
+					for(unsigned int i=(viewerTaskInterest.offsetOfWantedDots+1); i<viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion; i++){
+						phPointMy[0].x=viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i-1].xResult;
+						phPointMy[0].y=-1*viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i-1].yResult;
+
+						phPointMy[1].x=viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i].xResult;
+						phPointMy[1].y=-1*viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i].yResult;
+						PtSetArg(&args[0],Pt_ARG_POINTS, phPointMy,2);
+						PtSetResources(ABW_PtMyLine, 1, args);
 
 
 
-		for(int i=0; i<taskResultStruct.taskResultCommonStructHeader.numberOfDotsCoordinates; i++){
-			printf("[INFO]: Server CHID for client X: %i, Y: %i\n",taskResultStruct.taskResultPairOfDots[i].xResult, taskResultStruct.taskResultPairOfDots[i].yResult);
+						PtSetArg(&args[0],Pt_ARG_POINTS, phPointMy,2);
+						PtSetArg(&args[1],Pt_ARG_ORIGIN, &phPointOriginMy,1);
+						if(viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i-1].resultExceeded==true || viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i].resultExceeded==true){
+							PtSetArg(&args[2],Pt_ARG_COLOR,0x00FF0000,0);
+						}
+						else{
+							PtSetArg(&args[2],Pt_ARG_COLOR,0x0000FF00,0);
+						}
+
+
+						lines[i-1]=PtCreateWidget(PtLine, Pt_DEFAULT_PARENT,3, args);
+						PtRealizeWidget(lines[i-1]);
+
+						phPointOriginMy.x=500;
+						phPointOriginMy.y=350;
+						PtSetArg(&args[0],Pt_ARG_ORIGIN, &phPointOriginMy,1);
+						PtSetResources(lines[i-1], 1, args);
+
+
+
+						printf("[INFO]: NUmber: %d X: %f, Y: %f\n",i,viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i].xResult, viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i].yResult);
+						//break;
+					}
+					currentDot=currentDot+viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion;
+					viewerTaskInterest.offsetOfWantedDots=currentDot;
+					viewerTaskInterest.numberOfWantedDots=viewerTaskInterest.numberOfWantedDots-currentDot;
+					break;
+			}
+
+
 		}
-
-
 		PtSetArg(&args[0], Pt_ARG_TEXT_STRING,"Stop", 0);
 		PtSetResources(ABW_StartStopButton, 1, args);
 
 		regime=1;
+		return( Pt_CONTINUE );
+
+	deinit:
+		for(int i=0; i<BUFF_SIZE;i++){
+			PtDestroyWidget(lines[i]);
+		}
+		delete [] lines;
+		delete [] viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots;
+		return( Pt_CONTINUE );
 	}
 	else{
 		regime=0;
 		PtSetArg(&args[0], Pt_ARG_TEXT_STRING,"Start", 0);
 		PtSetResources(ABW_StartStopButton, 1, args);
+		return( Pt_CONTINUE );
 	}
-	return( Pt_CONTINUE );
 
-deinit:
 
 
 	//aboutServerInfoStruct.nd=netmgr_strtond(aboutServerInfoStruct.serverNodeName, NULL);
@@ -166,6 +245,6 @@ deinit:
 	/* eliminate 'unreferenced' warnings */
 
 	return( Pt_CONTINUE );
-
 	}
+
 

@@ -51,6 +51,7 @@ typedef struct{
 	unsigned long offsetOfResults;
 	unsigned long numberOfDotsEvaluatedInCurrentPortion;
 
+	unsigned long totalNumberOfDots;
 
 	long long exceedsInNanosecds;
 
@@ -71,11 +72,26 @@ typedef struct{
 } TaskResultCommonStruct;
 
 
+typedef enum{
+	VIEWER_OK,
+	VIEWER_TASK_IS_PARTICALLY_DONE,
+	VIEWER_NO_SUCH_TASK,
+
+	VIEWER_TASK_IS_NOT_DONE,
+
+} ServerToViewerAnswer;
+
 typedef struct{
+	ServerToViewerAnswer answer;
 	TaskResultCommonStruct taskResultCommonStruct;
-	bool exist;
 } ViewerResultCommonStruct;
 
-
+typedef struct{
+	struct{
+		unsigned long offsetOfWantedDots;
+		unsigned long numberOfWantedDots;
+	};
+	int taskID;
+}ViewerTaskInterest;
 
 #endif /* COMMON_STRUCTS_HPP_ */
