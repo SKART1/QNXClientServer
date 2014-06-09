@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 #include "../SlavePrj/Slave.hpp"
-#include "../ServerPrj/ServerPrj.hpp"
+#include "../ServPrj/ServerPrj.hpp"
 
 int ParseServerInfoFile(std::string pathToInfoFile, ArgSlaveStruct *argSlaveStruct){
 	FILE *filePointer;

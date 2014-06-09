@@ -22,9 +22,9 @@
 #include "proto.h"
 
 /*My local headers*/
-#include "../../ServerPrj/includes/CommonStructs.hpp"
+#include "../../ServPrj/includes/CommonStructs.hpp"
 
-#define BUFF_SIZE 1000
+#define BUFF_SIZE 5000
 #define PORTION 10;
 
 int regime=0;
@@ -151,6 +151,8 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 
 		currentDot=0;
 		viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.totalNumberOfDots=1;
+		int currentLine;
+		currentLine=0;
 		while(viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.totalNumberOfDots>currentDot && viewerResultCommonStruct.answer!=VIEWER_NO_SUCH_TASK){
 			viewerTaskInterest.offsetOfWantedDots=currentDot;
 			viewerTaskInterest.numberOfWantedDots=BUFF_SIZE;
@@ -171,11 +173,14 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 				case VIEWER_TASK_IS_NOT_DONE:
 					PtSetArg(&args[0], Pt_ARG_TEXT_STRING,"TASK_IN_QUEU", 0);
 					PtSetResources(ABW_PtLabelStatus, 1, args);
-					usleep(100);
+					usleep(5000);
 					break;
 				case VIEWER_OK:
 				case VIEWER_TASK_IS_PARTICALLY_DONE:
-					for(unsigned int i=(viewerTaskInterest.offsetOfWantedDots+1); i<viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion; i++){
+					for(unsigned int i=(viewerTaskInterest.offsetOfWantedDots); i<(viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion); i++){
+						if(i==0){
+							i=1;
+						}
 						phPointMy[0].x=viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i-1].xResult;
 						phPointMy[0].y=-1*viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i-1].yResult;
 
@@ -196,9 +201,9 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 						}
 
 
-						lines[i-1]=PtCreateWidget(PtLine, Pt_DEFAULT_PARENT,3, args);
-						PtRealizeWidget(lines[i-1]);
-
+						lines[currentLine]=PtCreateWidget(PtLine, Pt_DEFAULT_PARENT,3, args);
+						PtRealizeWidget(lines[currentLine]);
+						currentLine++;
 						phPointOriginMy.x=500;
 						phPointOriginMy.y=350;
 						PtSetArg(&args[0],Pt_ARG_ORIGIN, &phPointOriginMy,1);
@@ -219,7 +224,7 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 		}
 		PtSetArg(&args[0], Pt_ARG_TEXT_STRING,"Stop", 0);
 		PtSetResources(ABW_StartStopButton, 1, args);
-
+		delete [] viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots;
 		regime=1;
 		return( Pt_CONTINUE );
 
@@ -233,6 +238,10 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 	}
 	else{
 		regime=0;
+		for(int i=0; i<BUFF_SIZE;i++){
+			PtDestroyWidget(lines[i]);
+		}
+		delete [] lines;
 		PtSetArg(&args[0], Pt_ARG_TEXT_STRING,"Start", 0);
 		PtSetResources(ABW_StartStopButton, 1, args);
 		return( Pt_CONTINUE );

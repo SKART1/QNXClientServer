@@ -22,9 +22,9 @@
 
 #Momentics
 #.project
-.qnx_internal.mk
-.cproject
-.settings
+#.qnx_internal.mk
+#.cproject
+#.settings
 
 
 #Eclipse

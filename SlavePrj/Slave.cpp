@@ -50,7 +50,7 @@ void * Slave(void *argSlaveParam) {
 
 		taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults=0;
 		//taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsCoordinatesEvaluatedInCurrentTask=taskStruct.currentWantedPortionOfDots;
-
+		taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion=0;
 
 
 		while((taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion)<taskStruct.totalNumberOfDots){

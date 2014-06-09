@@ -19,12 +19,6 @@ LDFLAGS+=-lang-c++
 
 VFLAG_g=-gstabs+
 
-#===== EXTRA_LIBVPATH - a space-separated list of directories to search for library files.
-EXTRA_LIBVPATH+=$(PROJECT_ROOT_InterpolatorImpl)/$(CPU)/$(patsubst so%,a-shared%,$(notdir $(CURDIR)))
-
-#===== LIBS - a space-separated list of library items to be included in the link.
-LIBS+=-Bstatic InterpolatorImplS m -Bdynamic
-
 include $(MKFILES_ROOT)/qmacros.mk
 ifndef QNX_INTERNAL
 QNX_INTERNAL=$(PROJECT_ROOT)/.qnx_internal.mk

@@ -17,7 +17,7 @@
 #include <iostream>
 #include <errno.h>
 #include "../InterpolatorImpl/InterpolatorImpl.h"
-#include "../ServerPrj/includes/CommonStructs.hpp"
+#include "../ServPrj/includes/CommonStructs.hpp"
 
 void * Slave(void *argSlaveParam);
 

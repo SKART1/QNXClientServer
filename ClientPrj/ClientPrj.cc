@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <iomanip>
 
-#include "../ServerPrj/includes/CommonStructs.hpp"
+#include "../ServPrj/includes/CommonStructs.hpp"
 
 
 
