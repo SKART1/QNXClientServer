@@ -75,28 +75,11 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 	PhPoint_t phPointOriginMy;
 	phPointOriginMy.x=150;
 	phPointOriginMy.y=0;
-	PtSetArg(&args[0],Pt_ARG_ORIGIN, &phPointOriginMy,1);
-	PtSetResources(ABW_PtMyLine, 1, args);
+
 
 	PhPoint_t phPointMy[2];
-	phPointMy[0].x=0;
-	phPointMy[0].y=0;
-
-	phPointMy[1].x=1000;
-	phPointMy[1].y=1000;
-	/*
-	PtSetArg(&args[0],Pt_ARG_ORIGIN, &phPointOriginMy,1);
-	PtSetResources(ABW_PtMyLine, 1, args);
 
 
-	PtSetArg(&args[0],Pt_ARG_POINTS, phPointMy,2);
-	PtSetResources(ABW_PtMyLine, 1, args);
-*/
-
-
-
-
-	/*http://127.0.0.1:50484/help/index.jsp?topic=%2Fcom.qnx.doc.photon_prog_guide%2Fres_code.html*/
 
 	if(regime==0){
 		char pathToServerInfoFile[250];
@@ -123,18 +106,16 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 
 		ParseServerInfoFile(pathToServerInfoFile, serverNodeName, &serverPID, &serverCHID);
 		serverNodeNumber=netmgr_strtond(serverNodeName, NULL);
-		printf("[INFO]: Path to file: %s and serverNodeNumber: %i PID: %d CHID: %d \n ",pathToServerInfoFile,serverNodeNumber, serverPID, serverCHID);
-		printf("[INFO]: Task number: %i", taskNumber);
 
 		if(serverNodeNumber==-1 || taskNumber<0){
 			printf("[ERROR]: serverNodeNumber or  taskNumber incorrect");
-			goto deinit;
+			return -1;
 		};
 
 
 		if((coid=ConnectAttach(serverNodeNumber, serverPID, serverCHID,NULL,NULL))==-1){
 			perror("[ERROR]: Connect attach");
-			goto deinit;
+			return -1;
 		};
 
 
@@ -147,13 +128,15 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 		viewerTaskInterest.numberOfWantedDots=BUFF_SIZE;
 
 		lines=new PtWidget_t*[BUFF_SIZE];
-
-
+		memset(lines, NULL, sizeof(PtWidget_t*)*BUFF_SIZE);
+		for(int i=0; i<BUFF_SIZE;i++){
+			lines[i]=NULL;
+		}
 		currentDot=0;
-		viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.totalNumberOfDots=1;
+		viewerResultCommonStruct.totalNumberOfDots=1;
 		int currentLine;
 		currentLine=0;
-		while(viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.totalNumberOfDots>currentDot && viewerResultCommonStruct.answer!=VIEWER_NO_SUCH_TASK){
+		while(viewerResultCommonStruct.totalNumberOfDots>currentDot && viewerResultCommonStruct.answer!=VIEWER_NO_SUCH_TASK){
 			viewerTaskInterest.offsetOfWantedDots=currentDot;
 			viewerTaskInterest.numberOfWantedDots=BUFF_SIZE;
 
@@ -163,7 +146,10 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 			SETIOV(iovReceive+1, &(viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader), sizeof(TaskResultCommonStructHeader));
 			SETIOV(iovReceive+2, &viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[currentDot], (BUFF_SIZE-currentDot)*sizeof(TaskResultPairOfDots));
 
-			MsgSendv(coid,&iovSend, 1, iovReceive, 3);
+			if(MsgSendv(coid,&iovSend, 1, iovReceive, 3)==-1){
+				perror("[EROR]: Message send!");
+				goto deinit;
+			};
 			switch(viewerResultCommonStruct.answer){
 				case VIEWER_NO_SUCH_TASK:
 					PtSetArg(&args[0], Pt_ARG_TEXT_STRING,"VIEWER_NO_SUCH_TASK", 0);
@@ -177,7 +163,9 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 					break;
 				case VIEWER_OK:
 				case VIEWER_TASK_IS_PARTICALLY_DONE:
-					for(unsigned int i=(viewerTaskInterest.offsetOfWantedDots); i<(viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion); i++){
+					PtSetArg(&args[0], Pt_ARG_TEXT_STRING,"VIEWER_OK", 0);
+					PtSetResources(ABW_PtLabelStatus, 1, args);
+					for(unsigned int i=(viewerTaskInterest.offsetOfWantedDots); i<(viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion); i++){
 						if(i==0){
 							i=1;
 						}
@@ -187,8 +175,6 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 						phPointMy[1].x=viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i].xResult;
 						phPointMy[1].y=-1*viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i].yResult;
 						PtSetArg(&args[0],Pt_ARG_POINTS, phPointMy,2);
-						PtSetResources(ABW_PtMyLine, 1, args);
-
 
 
 						PtSetArg(&args[0],Pt_ARG_POINTS, phPointMy,2);
@@ -214,7 +200,7 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 						printf("[INFO]: NUmber: %d X: %f, Y: %f\n",i,viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i].xResult, viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots[i].yResult);
 						//break;
 					}
-					currentDot=currentDot+viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion;
+					currentDot=currentDot+viewerResultCommonStruct.taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion;
 					viewerTaskInterest.offsetOfWantedDots=currentDot;
 					viewerTaskInterest.numberOfWantedDots=viewerTaskInterest.numberOfWantedDots-currentDot;
 					break;
@@ -230,7 +216,9 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 
 	deinit:
 		for(int i=0; i<BUFF_SIZE;i++){
-			PtDestroyWidget(lines[i]);
+			if(lines[i]!=NULL){
+				PtDestroyWidget(lines[i]);
+			}
 		}
 		delete [] lines;
 		delete [] viewerResultCommonStruct.taskResultCommonStruct.taskResultPairOfDots;
@@ -239,7 +227,9 @@ startStop( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 	else{
 		regime=0;
 		for(int i=0; i<BUFF_SIZE;i++){
-			PtDestroyWidget(lines[i]);
+			if(lines[i]!=NULL){
+				PtDestroyWidget(lines[i]);
+			}
 		}
 		delete [] lines;
 		PtSetArg(&args[0], Pt_ARG_TEXT_STRING,"Start", 0);

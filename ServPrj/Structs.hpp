@@ -19,32 +19,33 @@
 
 
 
+/*-----------------------------------------------------------*/
+/*Task*/
+typedef struct{
+	TaskCommonStruct taskCommonStruct;
+	int receiveClientID;
+}TaskServerStruct;
+/*-----------------------------------------------------------*/
 
 
 typedef struct TaskResultServerStruct TaskResultServerStruct;
 
 struct TaskResultServerStruct{
+	TaskServerStruct taskServerStruct;
 	TaskResultCommonStruct taskResultCommonStruct;
-	int receiveClientID;
+
+	//int receiveClientID;
 	unsigned long lastCompletedDot;
+
 	TaskResultServerStruct* nextResultServerStruct;
 	TaskResultServerStruct* previousResultServerStruct;
 };
-
-typedef struct{
-	TaskCommonStruct taskCommonStruct;
-	int receiveClientID;
-}TaskServerStruct;
-
-
 
 
 typedef struct {
 	std::map  <int, TaskServerStruct> serverTaskQueueStruct;
 	TaskResultServerStruct *taskResultServerStructFirst;
 	TaskResultServerStruct *taskResultServerStructLastExistingEmpty;
-
-	unsigned int numberOfTasksInQueue;
 
 	bool quantEndedRecievingTasksFromClients;
 	bool quantEndedGivingTasksToSlaves;
@@ -55,6 +56,8 @@ typedef struct {
 } ServerInternalDynamicData;
 
 
+
+
 typedef struct {
 	char serverNodeName[250];
 	pid_t servPid;
@@ -62,8 +65,10 @@ typedef struct {
 	int chidSlaveTask;
 	int chidSlaveResult;
 	int chidViewer;
-	pthread_t *tid;
+	pthread_t *slaveThreadID;
 } ServerInternalStaticData;
+
+
 
 typedef struct{
 	char severInfoFileName[250];

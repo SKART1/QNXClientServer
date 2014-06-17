@@ -1,8 +1,10 @@
 #ifndef COMMON_STRUCTS_HPP_
 #define COMMON_STRUCTS_HPP_
 
-#include <vector>
+#define ID_MEANS_NEW_TASK 0
 
+/*-----------------------------------------------------------*/
+/*Task*/
 typedef struct{
 	double H;
 	double a;
@@ -27,7 +29,11 @@ typedef struct{
 
 	unsigned int taskID;
 } TaskCommonStruct;
+/*----------------------------------------------------*/
 
+
+/*----------------------------------------------------*/
+/*Result to client*/
 typedef enum{
 	OK,
 	TASK_IS_PARTICALLY_DONE,
@@ -36,11 +42,7 @@ typedef enum{
 	QUEU_IS_FULL,
 	NO_SUCH_TASK,
 
-
 	PREVIOUS_SUBTASK_HAVE_NOT_BEEN_DONE_YET,
-
-
-
 
 	TASK_ECEEDED,
 } ServerToClientAnswers;
@@ -49,13 +51,8 @@ typedef struct{
 	int taskID;
 
 	unsigned long offsetOfResults;
-	unsigned long numberOfDotsEvaluatedInCurrentPortion;
+	unsigned long numberOfDotsInCurrentPortion;
 
-	unsigned long totalNumberOfDots;
-
-	long long exceedsInNanosecds;
-
-	bool taskExceeded;
 	ServerToClientAnswers serverToClientAnswers;
 } TaskResultCommonStructHeader;
 
@@ -70,8 +67,22 @@ typedef struct{
 	TaskResultCommonStructHeader taskResultCommonStructHeader;
 	TaskResultPairOfDots *taskResultPairOfDots;
 } TaskResultCommonStruct;
+/*----------------------------------------------------*/
 
 
+/*----------------------------------------------------*/
+/*Viewer interest*/
+typedef struct{
+	struct{
+		unsigned long offsetOfWantedDots;
+		unsigned long numberOfWantedDots;
+	};
+	int taskID;
+}ViewerTaskInterest;
+/*----------------------------------------------------*/
+
+/*----------------------------------------------------*/
+/*Result to viewer*/
 typedef enum{
 	VIEWER_OK,
 	VIEWER_TASK_IS_PARTICALLY_DONE,
@@ -81,17 +92,14 @@ typedef enum{
 
 } ServerToViewerAnswer;
 
+
 typedef struct{
 	ServerToViewerAnswer answer;
+	unsigned long totalNumberOfDots;
 	TaskResultCommonStruct taskResultCommonStruct;
 } ViewerResultCommonStruct;
 
-typedef struct{
-	struct{
-		unsigned long offsetOfWantedDots;
-		unsigned long numberOfWantedDots;
-	};
-	int taskID;
-}ViewerTaskInterest;
+
+/*----------------------------------------------------*/
 
 #endif /* COMMON_STRUCTS_HPP_ */

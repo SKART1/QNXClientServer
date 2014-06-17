@@ -12,7 +12,7 @@
 #include <iomanip>
 
 #include "../ServPrj/includes/CommonStructs.hpp"
-
+#include "../DebugPrint.hpp"
 
 
 /*-----------------------------------------------------------------------*/
@@ -23,7 +23,7 @@ int ParseServerInfoFile(std::string pathToInfoFile, char * serverNodeName,  pid_
 
 
 	if((filePointer=fopen(pathToInfoFile.c_str(),"r"))==NULL){
-		std::cerr<<"[ERROR]: Can not server info file to "<<pathToInfoFile.c_str()<<std::endl;
+		DEBUG_CRITICALL_PRINT("ERROR", "[ERROR]: Can not server info file to "<<pathToInfoFile.c_str());
 		return -1;
 	}
 	else{
@@ -33,7 +33,7 @@ int ParseServerInfoFile(std::string pathToInfoFile, char * serverNodeName,  pid_
 	}
 	fclose(filePointer);
 	if(result!=3){
-		std::cerr<<"[ERROR]: Wrong server info format"<<std::endl;
+		DEBUG_CRITICALL_PRINT("ERROR", "Wrong server info format");
 		return -1;
 	}
 	return 0;
@@ -52,43 +52,50 @@ int main(int argc, char *argv[]) {
 	int nd=-1;
 	int coid=-1;
 
+#ifdef DEBUG_PRINT_ALLOWED
 	const char separator    = ' ';
 	const int numWidth      = 8;
+#endif
 
+	std::string pathTemp;
 
-	if(argc<2){
-		std::cerr<<"[INFO]: No path given. Using default serv.serv"<<std::endl;
-		ParseServerInfoFile("serv.serv", serverNodeName,  &servPID, &servCHID);
+	TaskCommonStruct taskStruct;
+
+	TaskResultCommonStruct taskResultStruct;
+
+	iov_t iovSend;
+	iov_t iovReceive[2];
+
+	pathTemp="serv.serv";
+	if(argc>1){
+		pathTemp=std::string(argv[1]);
 	}
-	else{
-		ParseServerInfoFile(argv[1], serverNodeName,  &servPID, &servCHID);
-	}
 
-
-
+	if(ParseServerInfoFile(pathTemp, serverNodeName,  &servPID, &servCHID)==-1){
+		return -1;
+	};
 
 	if((nd=netmgr_strtond(serverNodeName, NULL))==-1){
 		std::cerr<<"[ERROR]: Can not resolve QNet host "<<serverNodeName<<std::endl;
+		return -1;
 	}
-
-
 
 	if ((coid = ConnectAttach(nd, servPID, servCHID,	NULL, NULL))==-1) {
 		std::cerr << "[ERROR]: " << errno << "can not attach from client to server channel because of:"<< strerror(errno);
-		return NULL;
+		return -1;
 	}
 	
 	unsigned int totalNumberOfDots=atoi(argv[4]);
 
 
-	TaskCommonStruct taskStruct;
+
 	taskStruct.H=1;
 	taskStruct.a=atof(argv[2]);
 	taskStruct.b=atof(argv[3]);
 	if(taskStruct.a<taskStruct.b){
 		double temp=taskStruct.b;
 		taskStruct.b=taskStruct.a;
-		taskStruct.a=taskStruct.b;
+		taskStruct.a=temp;
 	}
 	taskStruct.kvadrantX=+1;
 	taskStruct.kvadrantY=-1;
@@ -102,45 +109,45 @@ int main(int argc, char *argv[]) {
 
 
 
-
-	TaskResultCommonStruct taskResultStruct;
 	taskResultStruct.taskResultPairOfDots=new TaskResultPairOfDots[taskStruct.totalNumberOfDots];
-	iov_t iovSend;
-	iov_t iovReceive[2];
+
 
 	SETIOV(&iovSend, &(taskStruct), sizeof(TaskCommonStruct));
 
 	SETIOV(iovReceive+0, &(taskResultStruct.taskResultCommonStructHeader), sizeof(TaskResultCommonStructHeader));
 	SETIOV(iovReceive+1, &taskResultStruct.taskResultPairOfDots[0], taskStruct.portionSize*sizeof(TaskResultPairOfDots));
 
-	MsgSendv(coid,&iovSend, 1, iovReceive, 2);
+	if(MsgSendv(coid,&iovSend, 1, iovReceive, 2)==-1){
+		perror("[ERROR]: MsgSend: ");
+		goto deinit;
+
+	};
 	switch(taskResultStruct.taskResultCommonStructHeader.serverToClientAnswers){
 		case QUEU_IS_FULL:
-			std::cerr<<"QUEU IS FULL"<<std::endl;
+			DEBUG_CRITICALL_PRINT("ERROR", "QUEU IS FULL");
 			break;
 		case NO_SUCH_TASK:
-			std::cerr<<"NO_SUCH_TASK"<<std::endl;
+			DEBUG_CRITICALL_PRINT("ERROR", "NO_SUCH_TASK");
 			break;
 		case PREVIOUS_SUBTASK_HAVE_NOT_BEEN_DONE_YET:
-			std::cerr<<"PREVIOUS_SUBTASK_HAVE_NOT_BEEN_DONE_YET"<<std::endl;
+			DEBUG_CRITICALL_PRINT("ERROR", "PREVIOUS_SUBTASK_HAVE_NOT_BEEN_DONE_YET");
 			break;
 		default:
-			std::cerr<<"Answer is: "<<taskResultStruct.taskResultCommonStructHeader.serverToClientAnswers<<std::endl;
+			DEBUG_PRINT("INFO", "Answer is: "<<taskResultStruct.taskResultCommonStructHeader.serverToClientAnswers);
 			break;
 	}
 
+#ifdef DEBUG_PRINT_ALLOWED
 	for(unsigned int i=0; i<taskStruct.portionSize; i++){
 		std::cerr <<" Dot:"<<std::left<<std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) <<i;
 		std::cerr <<" X:"<<std::left<<std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) <<taskResultStruct.taskResultPairOfDots[i].xResult;
 		std::cerr <<" Y:"<< std::left<< std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) <<taskResultStruct.taskResultPairOfDots[i].yResult;
 		std::cerr << std::endl;
-		//std::cerr<<"Dot "<<i<< " X: "<<taskResultStruct.taskResultPairOfDots[i].xResult<<" Y: "<<taskResultStruct.taskResultPairOfDots[i].yResult<<std::endl;
-		//taskResultStruct.xVector.pop_back();
-		//taskResultStruct.yVector.pop_back();
 	}
+#endif
 
-
-	unsigned int pairsDone=taskStruct.portionSize;
+	unsigned int pairsDone;
+	pairsDone=taskStruct.portionSize;
 	taskStruct.taskID=taskResultStruct.taskResultCommonStructHeader.taskID;
 	while(pairsDone<totalNumberOfDots){
 		taskStruct.offsetOfWantedDots=pairsDone;
@@ -153,32 +160,21 @@ int main(int argc, char *argv[]) {
 
 		MsgSendv(coid,&iovSend, 1, iovReceive, 2);
 
-		for(unsigned int i=taskResultStruct.taskResultCommonStructHeader.offsetOfResults; i<(taskResultStruct.taskResultCommonStructHeader.offsetOfResults+taskResultStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion); i++){
-			//std::cerr << std::left<<std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) << taskResultStruct.xVector.back();
-			//std::cerr << std::left<< std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) << taskResultStruct.yVector.back();
-			//std::cerr << std::endl;
+#ifdef DEBUG_PRINT_ALLOWED
+		for(unsigned int i=taskResultStruct.taskResultCommonStructHeader.offsetOfResults; i<(taskResultStruct.taskResultCommonStructHeader.offsetOfResults+taskResultStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion); i++){
 			std::cerr <<" Dot:"<<std::left<<std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) <<i;
 			std::cerr <<" X:"<<std::left<<std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) <<taskResultStruct.taskResultPairOfDots[i].xResult;
 			std::cerr <<" Y:"<< std::left<< std::fixed << std::setprecision(3) << std::setw(numWidth) << std::setfill(separator) <<taskResultStruct.taskResultPairOfDots[i].yResult;
 			std::cerr<<std::endl;
-			//std::cerr<<"Dot "<<i<<" X: "<<taskResultStruct.taskResultPairOfDots[i].xResult<<" Y: "<<taskResultStruct.taskResultPairOfDots[i].yResult<<std::endl;
-			//taskResultStruct.xVector.pop_back();
-			//taskResultStruct.yVector.pop_back();
 		}
-
-
-		pairsDone=pairsDone+taskResultStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion;
-
-
-		//std::cerr<<taskResultStruct.xVector.size()<<std::endl;
-
-
-
+#endif
+		pairsDone=pairsDone+taskResultStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion;
 	}
+
+	DEBUG_PRINT("INFO", "Finished");
+
+deinit:
 	delete[] taskResultStruct.taskResultPairOfDots;
-
-	std::cerr<<"Finished"<<std::endl;
-
 	return EXIT_SUCCESS;
 }
 /*-----------------------------------------------------------------------*/

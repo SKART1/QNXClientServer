@@ -39,43 +39,38 @@ void * Slave(void *argSlaveParam) {
 
 	TaskResultCommonStruct taskResultCommonStruct;
 
+	iov_t iov[2];
+
+
 	while (true) {
 		MsgSend(chidTasks,NULL,NULL, &taskStruct, sizeof(TaskCommonStruct));
 		std::cerr<<"[SLAVE]: Task received"<<std::endl;
 		interpolatorImpl.setAllNewParametrs(taskStruct.H, taskStruct.a, taskStruct.b,taskStruct.kvadrantX,taskStruct.kvadrantY,taskStruct.startX, taskStruct.startY);
 
-
 		taskResultCommonStruct.taskResultCommonStructHeader.taskID=taskStruct.taskID;
 		taskResultCommonStruct.taskResultPairOfDots=new TaskResultPairOfDots[taskStruct.totalNumberOfDots];
 
 		taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults=0;
-		//taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsCoordinatesEvaluatedInCurrentTask=taskStruct.currentWantedPortionOfDots;
-		taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion=0;
+		taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion=0;
 
 
-		while((taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion)<taskStruct.totalNumberOfDots){
+		while((taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion)<taskStruct.totalNumberOfDots){
 
 			for(unsigned long i=taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults;i<(taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskStruct.portionSize) &&	i<taskStruct.totalNumberOfDots;	i++){
 				interpolatorImpl.getNextPoint(&taskResultCommonStruct.taskResultPairOfDots[i].xResult, &taskResultCommonStruct.taskResultPairOfDots[i].yResult);
-				taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion++;
+				taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion++;
 			}
 
 			int msgSize=sizeof(taskResultCommonStruct);
 
-
-			msgSize=msgSize+sizeof(TaskResultPairOfDots)*taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion;
-
-
-
-
-			iov_t iov[2];
+			msgSize=msgSize+sizeof(TaskResultPairOfDots)*taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion;
 
 			SETIOV(iov+0, &taskResultCommonStruct.taskResultCommonStructHeader, sizeof(TaskResultCommonStructHeader));
-			SETIOV(iov+1, &taskResultCommonStruct.taskResultPairOfDots[taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults], sizeof(TaskResultPairOfDots)*taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion);
+			SETIOV(iov+1, &taskResultCommonStruct.taskResultPairOfDots[taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults], sizeof(TaskResultPairOfDots)*taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion);
 			std::cerr<<"[SLAVE]: Portion send"<<std::endl;
 			MsgSendv(chidResults,iov,2, NULL,NULL);
-			taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults=taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion;
-			taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsEvaluatedInCurrentPortion=0;
+			taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults=taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion;
+			taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion=0;
 		}
 
 		delete [] taskResultCommonStruct.taskResultPairOfDots;

@@ -5,22 +5,24 @@
 #include "../SlavePrj/Slave.hpp"
 #include "../ServPrj/ServerPrj.hpp"
 
+#include  "../DebugPrint.hpp"
+
 int ParseServerInfoFile(std::string pathToInfoFile, ArgSlaveStruct *argSlaveStruct){
 	FILE *filePointer;
 	int result=0;
 	if((filePointer=fopen(pathToInfoFile.c_str(),"r"))==NULL){
-		std::cerr<<"[ERROR]: Can not server info file to "<<pathToInfoFile<<std::endl;
+		DEBUG_CRITICALL_PRINT("ERROR", "Can not server info file to "<<pathToInfoFile);
 		return -1;
 	}
 	else{
-		result=result+fscanf(filePointer, "SERVER_NODE_NAME: %d\n", argSlaveStruct->serverNodeName);
+		result=result+fscanf(filePointer, "SERVER_NODE_NAME: %s\n", argSlaveStruct->serverNodeName);
 		result=result+fscanf(filePointer, "SERVER_PID: %d\n", &argSlaveStruct->pid);
-		fscanf(filePointer, "CHID_FOR_CLIENT: %:d\n");
+		fscanf(filePointer, "CHID_FOR_CLIENT: %d\n",  &argSlaveStruct->chidTasks);
 		result=result+fscanf(filePointer, "CHID_TASKS_FOR_SLAVES: %d\n", &argSlaveStruct->chidTasks);
 		result=result+fscanf(filePointer, "CHID_RESULTS_FOR_SLAVES: %d\n", &argSlaveStruct->chidResults);
 		fclose(filePointer);
 		if(result!=4){
-			std::cerr<<"[ERROR]: Wrong server info format"<<std::endl;
+			DEBUG_CRITICALL_PRINT("ERROR", "Wrong server info format");
 			return -1;
 		}
 		return 0;
@@ -29,24 +31,21 @@ int ParseServerInfoFile(std::string pathToInfoFile, ArgSlaveStruct *argSlaveStru
 
 }
 
-
-
 int main(int argc, char *argv[]) {
 	/*Slaves*/
 	ArgSlaveStruct *argSlaveStruct = new ArgSlaveStruct ;
+	std::string pathToInfoFile="serv.serv";
 
-	if(argc<2){
-		std::cerr<<"[INFO]: No path given. Using default serv.serv"<<std::endl;
-		ParseServerInfoFile("serv.serv", argSlaveStruct);
+	if(argc>1){
+		pathToInfoFile = argv[1];
 	}
-	else{
-		ParseServerInfoFile(argv[1], argSlaveStruct);
-	}
+
+	if(ParseServerInfoFile(pathToInfoFile, argSlaveStruct)==-1){
+		return NULL;
+	};
 
 
 	Slave(argSlaveStruct);
-
-
 
 	return EXIT_SUCCESS;
 }
