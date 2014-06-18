@@ -4,7 +4,7 @@
 #define ID_MEANS_NEW_TASK 0
 
 /*-----------------------------------------------------------*/
-/*Task*/
+/*Task from client*/
 typedef struct{
 	double H;
 	double a;
@@ -44,7 +44,7 @@ typedef enum{
 
 	PREVIOUS_SUBTASK_HAVE_NOT_BEEN_DONE_YET,
 
-	TASK_ECEEDED,
+	TASK_EXCEEDED,
 } ServerToClientAnswers;
 
 typedef struct{

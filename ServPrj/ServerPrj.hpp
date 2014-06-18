@@ -25,9 +25,29 @@
 
 #include "Structs.hpp"
 #include "../SlavePrj/Slave.hpp"
+
+
+
+/*Module to parse configuration file of server*/
 #include "ParseConfigFile.hpp"
 
 /*Structures that are used for communication with other members*/
 #include "includes/CommonStructs.hpp"
+
+/*debug outpur macroses*/
+#include "../DebugPrint.hpp"
+
+/*for ham*/
+#include <ha/ham.h>
+
+
+/*-----------------------------------------------------------------------*/
+//Prototypes
+static void sigusr1Handler(int signo, siginfo_t *info, void *other);
+static void sigusr2Handler(int signo,siginfo_t *info, void *other);
+void decrementTimeExceedLimits(ServerInternalDynamicData *serverInternalDynamicData);
+
+
+/*-----------------------------------------------------------------------*/
 
 #endif /* SERVERPRJ_HPP_ */

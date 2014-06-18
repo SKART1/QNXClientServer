@@ -34,7 +34,6 @@ struct TaskResultServerStruct{
 	TaskServerStruct taskServerStruct;
 	TaskResultCommonStruct taskResultCommonStruct;
 
-	//int receiveClientID;
 	unsigned long lastCompletedDot;
 
 	TaskResultServerStruct* nextResultServerStruct;
@@ -52,7 +51,11 @@ typedef struct {
 	bool quantEndedGettingResultsFromSlaves;
 	bool quantEndedViewer;
 
-	unsigned long uniqueTaskID;
+	unsigned long uniqueTaskIDGenerator;
+
+	unsigned long long int timerExceededPeriod;
+
+	volatile unsigned int timerExceedCounter;
 } ServerInternalDynamicData;
 
 

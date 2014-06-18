@@ -22,6 +22,7 @@ int ParseConfigFile(std::string pathToConfig, ServerConfigs *serverConfigs){
 
 
 	int scanned=0;
+	int totalNumberOfParametrs=6;
 	do{
 		scanned=0;
 
@@ -31,11 +32,18 @@ int ParseConfigFile(std::string pathToConfig, ServerConfigs *serverConfigs){
 		scanned=scanned+fscanf(filePointer, "TIMER_EXCEEDED_PERIOD: %llu\n\t", &(serverConfigs->timerExceededPeriod));
 
 		scanned=scanned+fscanf(filePointer, "NUMBER_OF_SLAVES: %i\n\t", &(serverConfigs->numberOfSlaves));
-		scanned=scanned+fscanf(filePointer, "MAX_TASK_QUEUE_SIZE: %i\n\t",  &(serverConfigs->maxTaskQueueSize));
+		scanned=scanned+fscanf(filePointer, "MAX_TASK_QUEU_SIZE: %i\n\t",  &(serverConfigs->maxTaskQueueSize));
 		scanned=scanned+fscanf(filePointer, "SERVER_INFO_FILE_NAME: %s\n\t",  serverConfigs->severInfoFileName);
+		totalNumberOfParametrs=totalNumberOfParametrs-scanned;
 	}
 	while(scanned>0);
+
+
 	fclose(filePointer);
+
+	if(totalNumberOfParametrs!=6){
+		return -1;
+	}
 	return 0;
 }
 /*-----------------------------------------------------------------------*/

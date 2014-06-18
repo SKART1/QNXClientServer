@@ -24,7 +24,7 @@ EXTRA_LIBVPATH+=$(PROJECT_ROOT_SlavePrj)/$(CPU)/$(patsubst o%,a%,$(notdir $(CURD
 	$(PROJECT_ROOT_InterpolatorImpl)/$(CPU)/$(patsubst o%,a%,$(notdir $(CURDIR)))
 
 #===== LIBS - a space-separated list of library items to be included in the link.
-LIBS+=-Bstatic ^SlavePrj ^InterpolatorImpl -Bdynamic m
+LIBS+=-Bstatic ^SlavePrj ^InterpolatorImpl -Bdynamic m ham
 
 include $(MKFILES_ROOT)/qmacros.mk
 ifndef QNX_INTERNAL
