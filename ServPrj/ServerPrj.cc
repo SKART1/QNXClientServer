@@ -121,11 +121,16 @@ int initialize(ServerInternalStaticData *serverInternalData, ServerConfigs *serv
 
 	ham_condition_t *testCondition;
 	char conditionName[]="SERVER_DIED";
-	testCondition=ham_condition(testEntity, CONDDEATH, conditionName, /*NULL*/ HREARMAFTERRESTART);
+	if((testCondition=ham_condition(testEntity, CONDDEATH, conditionName, /*NULL*/ HREARMAFTERRESTART))==NULL){
+		perror("[ERROR]: Ham condition");
+
+	};
 
 	ham_action_t *testAction;
 	char actionName[]="RESTART_SERVER";
-	testAction=ham_action_restart( testCondition,	actionName, "/tmp/test.sh"/*"/tmp/ServPrj_g"*/, /*NULL*/HREARMAFTERRESTART);
+	if((testAction=ham_action_restart( testCondition,	actionName, "/tmp/test.sh 1>1.txt 2>2.txt" /*"/tmp/ServPrj_g 1>1.txt 2>2.txt"*/, /*NULL*/HREARMAFTERRESTART))==NULL){
+		perror("[ERROR]: Ham condition");
+	};
 
 
 	if(ham_disconnect(NULL)==-1){
@@ -790,6 +795,8 @@ int main(int argc, char *argv[]) {
 	ServerInternalDynamicData serverInternalDynamicData;
 	ServerInternalStaticData serverInternalStaticData;
 	ServerConfigs serverConfigs;
+	std::string pathToConfigFile=std::string(argv[0]);
+    pathToConfigFile=pathToConfigFile.substr(0, pathToConfigFile.find_last_of('/')+1)+std::string(CONFIG_FILE_PATH);
 
 	if(ParseConfigFile("",&serverConfigs)==-1){
 			return EXIT_FAILURE;
