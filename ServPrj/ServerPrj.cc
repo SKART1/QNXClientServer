@@ -128,7 +128,7 @@ int initialize(ServerInternalStaticData *serverInternalData, ServerConfigs *serv
 
 	ham_action_t *testAction;
 	char actionName[]="RESTART_SERVER";
-	if((testAction=ham_action_restart( testCondition,	actionName, "/tmp/test.sh 1>1.txt 2>2.txt" /*"/tmp/ServPrj_g 1>1.txt 2>2.txt"*/, /*NULL*/HREARMAFTERRESTART))==NULL){
+	if((testAction=ham_action_restart( testCondition,	actionName, "/tmp/ServPrj_g 1>1.txt 2>2.txt" /*"/tmp/ServPrj_g 1>1.txt 2>2.txt"*/, /*NULL*/HREARMAFTERRESTART))==NULL){
 		perror("[ERROR]: Ham condition");
 	};
 
@@ -506,7 +506,6 @@ StateReturns GivingTasksToSlavesFirstTime(ServerInternalDynamicData *serverInter
 				break;
 			};
 			//Receiving
-			//TaskResultCommonStruct taskResultCommonStruct;
 			recieveID=MsgReceive(serverInternalStaticData->chidSlaveTask, &pulseBuff, sizeof(_pulse), &msgInfo);
 			//Timeout - no free Slaves - this is bad news....
 			if (recieveID<0 &&  errno== ETIMEDOUT) {
@@ -795,6 +794,8 @@ int main(int argc, char *argv[]) {
 	ServerInternalDynamicData serverInternalDynamicData;
 	ServerInternalStaticData serverInternalStaticData;
 	ServerConfigs serverConfigs;
+
+
 	std::string pathToConfigFile=std::string(argv[0]);
     pathToConfigFile=pathToConfigFile.substr(0, pathToConfigFile.find_last_of('/')+1)+std::string(CONFIG_FILE_PATH);
 
