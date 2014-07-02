@@ -613,13 +613,7 @@ StateReturns GettingResultsFromSlaves(ServerInternalDynamicData *serverInternalD
 			}
 
 			/*Slave has done current portion*/
-			//resultServerStructInServer->taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults=taskResultServerStructInSlave.taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults;
-			//resultServerStructInServer->taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion=taskResultServerStructInSlave.taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion;
-
-
-
-			MsgRead(recieveID,
-					&resultServerStructInServer->taskResultCommonStruct.taskResultPairOfDots[taskResultServerStructInSlave.taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults],
+			MsgRead(recieveID,&resultServerStructInServer->taskResultCommonStruct.taskResultPairOfDots[taskResultServerStructInSlave.taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults],
 					taskResultServerStructInSlave.taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion*sizeof(TaskResultPairOfDots),
 					sizeof(TaskResultCommonStructHeader));
 
@@ -644,11 +638,9 @@ StateReturns GettingResultsFromSlaves(ServerInternalDynamicData *serverInternalD
 
 			/*We may answer to client immediately*/
 			blockSigUsr2();
-			if(resultServerStructInServer->lastCompletedDot>=(resultServerStructInServer->taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+resultServerStructInServer->taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion)
-					&& resultServerStructInServer->taskServerStruct.receiveClientID!=-1){
+			if(resultServerStructInServer->lastCompletedDot>=(resultServerStructInServer->taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults+resultServerStructInServer->taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion)	&& resultServerStructInServer->taskServerStruct.receiveClientID!=-1){
 				MsgWrite(resultServerStructInServer->taskServerStruct.receiveClientID, &(resultServerStructInServer->taskResultCommonStruct.taskResultCommonStructHeader), sizeof(TaskResultCommonStructHeader),0);
-				MsgWrite(resultServerStructInServer->taskServerStruct.receiveClientID,
-						&resultServerStructInServer->taskResultCommonStruct.taskResultPairOfDots[taskResultServerStructInSlave.taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults],
+				MsgWrite(resultServerStructInServer->taskServerStruct.receiveClientID,&resultServerStructInServer->taskResultCommonStruct.taskResultPairOfDots[taskResultServerStructInSlave.taskResultCommonStruct.taskResultCommonStructHeader.offsetOfResults],
 						sizeof(TaskResultPairOfDots)*resultServerStructInServer->taskResultCommonStruct.taskResultCommonStructHeader.numberOfDotsInCurrentPortion,
 						sizeof(TaskResultCommonStructHeader));
 				MsgReply(resultServerStructInServer->taskServerStruct.receiveClientID, NULL, NULL,NULL);
